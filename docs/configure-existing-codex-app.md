@@ -9,6 +9,23 @@ It does not build or clone a separate desktop app. It writes into the existing C
 
 The script creates backups of existing `config.toml` and `hooks.json` unless `--no-backup` is passed.
 
+## Precondition: Ollama Login
+
+This repo's default flow routes Codex through the local Ollama daemon:
+
+- Codex -> `http://127.0.0.1:11435/v1`
+- reasoning proxy -> `http://127.0.0.1:11434`
+- local Ollama authenticates cloud model access
+
+For Ollama Cloud models such as `kimi-k2.6:cloud` or `glm-5.1:cloud`, sign in before configuring Codex:
+
+```bash
+ollama signin
+ollama run kimi-k2.6:cloud "hello"
+```
+
+No Codex API key is needed for this default local-daemon flow. `OLLAMA_API_KEY` is only needed for direct calls to `https://ollama.com/api`, which is a separate direct-cloud mode and not what this setup writes by default.
+
 ## macOS
 
 From this repo:

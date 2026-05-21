@@ -24,6 +24,14 @@ Trước khi cài, cần có:
 - Codex CLI hoạt động: `codex --version`
 - Ollama local hoặc Ollama Cloud endpoint tương thích OpenAI đang chạy ở `http://127.0.0.1:11434`
 - Python 3.10+ (`python3` trên Linux/macOS, `py -3` trên Windows)
+- Với Ollama Cloud model như `kimi-k2.6:cloud` hoặc `glm-5.1:cloud`, phải login Ollama trước:
+
+```bash
+ollama signin
+ollama run kimi-k2.6:cloud "hello"
+```
+
+Setup mặc định của repo đi qua local Ollama daemon (`127.0.0.1:11434`), nên không cần nhập API key vào Codex. API key (`OLLAMA_API_KEY`) chỉ cần khi gọi trực tiếp `https://ollama.com/api`, không phải luồng mặc định này.
 
 Clone repo:
 
