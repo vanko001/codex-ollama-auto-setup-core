@@ -17,20 +17,38 @@ Mục tiêu thực tế là khoảng **95% workflow parity**, không phải 100%
 - `runtime/codex-ollama-stop-guard.py`: `Stop` hook chặn câu trả lời “done/fixed/pass” nếu transcript chưa có verification command thành công.
 - `scripts/configure-profile.py`: cấu hình model/provider, reasoning `xhigh`, profile alias `ollama-launch`/`ollama-cloud`, plugin toggles hiện dùng (`superpowers`, `github`, `chrome`, docs/sheets/presentations).
 
-## Quick Start
+## Cài Đặt
 
-Yêu cầu:
+Trước khi cài, cần có:
 
 - Codex CLI hoạt động: `codex --version`
-- Codex Desktop Linux đã cài ở `~/.local/opt/codex-desktop-linux/codex-app` nếu muốn clone app desktop riêng
-- Ollama đang chạy ở `http://127.0.0.1:11434`
+- Ollama local hoặc Ollama Cloud endpoint tương thích OpenAI đang chạy ở `http://127.0.0.1:11434`
+- Python 3.10+ (`python3` trên Linux/macOS, `py -3` trên Windows)
 
-Auto setup:
+Clone repo:
 
 ```bash
 git clone https://github.com/vanko001/codex-ollama-auto-setup-core.git
 cd codex-ollama-auto-setup-core
+```
+
+### Linux
+
+Dùng luồng isolated profile nếu muốn chạy Codex Ollama tách khỏi Codex thường:
+
+```bash
 ./scripts/auto-setup.sh
+```
+
+Lệnh trên sẽ tạo:
+
+- profile: `~/.codex-ollama`
+- runtime: `~/.local/share/codex-desktop-ollama`
+- launcher: `~/.local/bin/codex-desktop-ollama`
+
+Mở app:
+
+```bash
 ~/.local/bin/codex-desktop-ollama
 ```
 
@@ -40,27 +58,47 @@ Nếu Codex Desktop source nằm chỗ khác:
 CODEX_DESKTOP_SOURCE_APP=/path/to/codex-app ./scripts/auto-setup.sh
 ```
 
-CLI check:
+Verify:
 
 ```bash
 CODEX_HOME=~/.codex-ollama codex -m kimi-k2.6:cloud doctor
 ```
 
-## Dùng với Codex app có sẵn trên macOS/Windows
+### macOS
 
-Nếu đã có Codex app thường và chỉ muốn thêm cấu hình Ollama Cloud vào profile hiện tại, dùng:
-
-macOS:
+Dùng luồng này nếu đã có Codex app thường và muốn gắn Ollama vào profile hiện tại `~/.codex`:
 
 ```bash
 python3 scripts/configure-existing-codex-app.py \
   --platform macos \
   --model kimi-k2.6:cloud \
   --trust-hooks
+```
+
+Lệnh trên sẽ:
+
+- backup `~/.codex/config.toml` và `~/.codex/hooks.json` nếu đã tồn tại
+- copy runtime vào `~/Library/Application Support/codex-desktop-ollama`
+- cấu hình provider `ollama-launch` trỏ tới `http://127.0.0.1:11435/v1`
+- ghi hook stack vào `~/.codex/hooks.json`
+
+Khởi động reasoning proxy trước khi mở Codex app:
+
+```bash
 ~/Library/Application\ Support/codex-desktop-ollama/start-reasoning-proxy.command
 ```
 
-Windows PowerShell:
+Sau đó mở Codex app có sẵn như bình thường và chọn model Ollama Cloud.
+
+Verify:
+
+```bash
+codex -m kimi-k2.6:cloud doctor
+```
+
+### Windows
+
+Dùng PowerShell từ thư mục repo:
 
 ```powershell
 py -3 scripts\configure-existing-codex-app.py `
@@ -68,10 +106,85 @@ py -3 scripts\configure-existing-codex-app.py `
   --model kimi-k2.6:cloud `
   --hook-python "py -3" `
   --trust-hooks
+```
+
+Lệnh trên sẽ:
+
+- backup `%USERPROFILE%\.codex\config.toml` và `%USERPROFILE%\.codex\hooks.json` nếu đã tồn tại
+- copy runtime vào `%APPDATA%\codex-desktop-ollama`
+- cấu hình provider `ollama-launch` trỏ tới `http://127.0.0.1:11435/v1`
+- ghi hook stack vào `%USERPROFILE%\.codex\hooks.json`
+
+Khởi động reasoning proxy trước khi mở Codex app:
+
+```powershell
 powershell -ExecutionPolicy Bypass -File "$env:APPDATA\codex-desktop-ollama\Start-ReasoningProxy.ps1"
 ```
 
-Sau đó mở Codex app có sẵn như bình thường. Script mặc định ghi vào `~/.codex` hoặc `%USERPROFILE%\.codex`, copy runtime vào app data OS-native, và backup `config.toml`/`hooks.json` trước khi sửa. Chi tiết: [`docs/configure-existing-codex-app.md`](docs/configure-existing-codex-app.md).
+Sau đó mở Codex app có sẵn như bình thường và chọn model Ollama Cloud.
+
+Verify:
+
+```powershell
+codex -m kimi-k2.6:cloud doctor
+```
+
+### Tùy Chọn Thường Dùng
+
+Đổi model mặc định:
+
+```bash
+python3 scripts/configure-existing-codex-app.py \
+  --platform macos \
+  --model glm-5.1:cloud
+```
+
+Ghi vào profile Codex khác:
+
+```bash
+python3 scripts/configure-existing-codex-app.py \
+  --platform macos \
+  --codex-home "$HOME/.codex-work" \
+  --model kimi-k2.6:cloud
+```
+
+Đổi port proxy:
+
+```bash
+CODEX_OLLAMA_REASONING_PROXY_PORT=11436 \
+python3 scripts/configure-existing-codex-app.py \
+  --platform macos \
+  --proxy-port 11436
+```
+
+### Sau Khi Cài
+
+Kiểm tra file đã được tạo:
+
+Linux:
+
+```bash
+test -f ~/.codex-ollama/config.toml
+test -f ~/.codex-ollama/hooks.json
+```
+
+macOS:
+
+```bash
+test -f ~/.codex/config.toml
+test -f ~/.codex/hooks.json
+test -f ~/Library/Application\ Support/codex-desktop-ollama/ollama-reasoning-proxy.py
+```
+
+Windows PowerShell:
+
+```powershell
+Test-Path "$env:USERPROFILE\.codex\config.toml"
+Test-Path "$env:USERPROFILE\.codex\hooks.json"
+Test-Path "$env:APPDATA\codex-desktop-ollama\ollama-reasoning-proxy.py"
+```
+
+Chi tiết cho Codex app có sẵn: [`docs/configure-existing-codex-app.md`](docs/configure-existing-codex-app.md).
 
 ## Test
 
