@@ -64,6 +64,93 @@ class PackagingScriptsTest(unittest.TestCase):
         self.assertIn('[plugins."github@openai-curated"]', updated)
         self.assertIn('[plugins."chrome@openai-bundled"]', updated)
 
+    def test_write_hooks_quotes_runtime_paths_with_spaces(self):
+        writer = load_script("write-hooks.py")
+
+        posix = writer.hook_command(
+            Path("/Users/alice/Library/Application Support/codex-desktop-ollama"),
+            "codex-ollama-tool-guard.py",
+            python_cmd="python3",
+            command_platform="posix",
+        )
+        windows = writer.hook_command(
+            Path("C:/Users/Alice/AppData/Roaming/codex-desktop-ollama"),
+            "codex-ollama-tool-guard.py",
+            python_cmd="py -3",
+            command_platform="windows",
+        )
+
+        self.assertEqual(
+            posix,
+            "python3 '/Users/alice/Library/Application Support/codex-desktop-ollama/codex-ollama-tool-guard.py'",
+        )
+        self.assertEqual(
+            windows,
+            'py -3 "C:/Users/Alice/AppData/Roaming/codex-desktop-ollama/codex-ollama-tool-guard.py"',
+        )
+
+    def test_existing_codex_app_defaults_cover_macos_and_windows(self):
+        existing_app = load_script("configure-existing-codex-app.py")
+
+        mac = existing_app.default_locations("macos", Path("/Users/alice"))
+        windows = existing_app.default_locations(
+            "windows",
+            Path("C:/Users/Alice"),
+            appdata=Path("C:/Users/Alice/AppData/Roaming"),
+        )
+
+        self.assertEqual(mac.codex_home, Path("/Users/alice/.codex"))
+        self.assertEqual(
+            mac.runtime_dir,
+            Path("/Users/alice/Library/Application Support/codex-desktop-ollama"),
+        )
+        self.assertEqual(windows.codex_home, Path("C:/Users/Alice/.codex"))
+        self.assertEqual(
+            windows.runtime_dir,
+            Path("C:/Users/Alice/AppData/Roaming/codex-desktop-ollama"),
+        )
+
+    def test_configure_existing_codex_app_installs_runtime_and_preserves_config(self):
+        existing_app = load_script("configure-existing-codex-app.py")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            codex_home = tmp_path / ".codex"
+            runtime_dir = tmp_path / "Application Support" / "codex-desktop-ollama"
+            codex_home.mkdir()
+            (codex_home / "config.toml").write_text('model = "gpt-5.4"\n', encoding="utf-8")
+
+            result = existing_app.configure_existing_app(
+                repo_root=ROOT,
+                codex_home=codex_home,
+                runtime_dir=runtime_dir,
+                platform="macos",
+                model="glm-5.1:cloud",
+                proxy_port="11435",
+                upstream="http://127.0.0.1:11434",
+                hook_python="python3",
+                backup=True,
+            )
+
+            config_text = (codex_home / "config.toml").read_text(encoding="utf-8")
+            hooks = json.loads((codex_home / "hooks.json").read_text(encoding="utf-8"))
+            rendered_hooks = json.dumps(hooks)
+
+            self.assertEqual(result["codex_home"], str(codex_home))
+            self.assertEqual(result["runtime_dir"], str(runtime_dir))
+            self.assertTrue((runtime_dir / "ollama-reasoning-proxy.py").is_file())
+            self.assertTrue((runtime_dir / "ollama-cloud-model-catalog.json").is_file())
+            self.assertTrue((runtime_dir / "start-reasoning-proxy.command").is_file())
+            self.assertTrue((runtime_dir / "Start-ReasoningProxy.ps1").is_file())
+            self.assertTrue(list(codex_home.glob("config.toml.bak.*")))
+            self.assertIn('model = "glm-5.1:cloud"', config_text)
+            self.assertIn(str(runtime_dir / "ollama-cloud-model-catalog.json"), config_text)
+            self.assertIn("http://127.0.0.1:11435/v1", config_text)
+            self.assertIn(
+                "Application Support/codex-desktop-ollama/codex-ollama-tool-guard.py'",
+                rendered_hooks,
+            )
+
     def test_model_picker_patch_disables_allowlist(self):
         patcher = load_script("patch-model-picker.py")
         with tempfile.TemporaryDirectory() as tmp:

@@ -8,6 +8,7 @@ Mục tiêu thực tế là khoảng **95% workflow parity**, không phải 100%
 
 - `scripts/auto-setup.sh`: entrypoint core chạy install, build desktop clone nếu source app có sẵn, verify và `codex doctor`.
 - `scripts/install.sh`: cài runtime, hooks, profile config, plugin toggles và trust hook tự động.
+- `scripts/configure-existing-codex-app.py`: gắn runtime Ollama vào Codex app có sẵn trên macOS/Windows bằng cách cấu hình profile `~/.codex` hiện tại, có backup.
 - `scripts/build-codex-desktop-ollama.sh`: clone bản Codex Desktop Linux đang có trong máy sang app id riêng.
 - `runtime/ollama-reasoning-proxy.py`: proxy rewrite `xhigh` của Codex sang reasoning native của Ollama Cloud, ví dụ `max` hoặc `high`.
 - `runtime/ollama-cloud-model-catalog.json`: catalog model Ollama Cloud có base instructions ép skill routing, TDD, verification và `apply_patch`.
@@ -45,6 +46,33 @@ CLI check:
 CODEX_HOME=~/.codex-ollama codex -m kimi-k2.6:cloud doctor
 ```
 
+## Dùng với Codex app có sẵn trên macOS/Windows
+
+Nếu đã có Codex app thường và chỉ muốn thêm cấu hình Ollama Cloud vào profile hiện tại, dùng:
+
+macOS:
+
+```bash
+python3 scripts/configure-existing-codex-app.py \
+  --platform macos \
+  --model kimi-k2.6:cloud \
+  --trust-hooks
+~/Library/Application\ Support/codex-desktop-ollama/start-reasoning-proxy.command
+```
+
+Windows PowerShell:
+
+```powershell
+py -3 scripts\configure-existing-codex-app.py `
+  --platform windows `
+  --model kimi-k2.6:cloud `
+  --hook-python "py -3" `
+  --trust-hooks
+powershell -ExecutionPolicy Bypass -File "$env:APPDATA\codex-desktop-ollama\Start-ReasoningProxy.ps1"
+```
+
+Sau đó mở Codex app có sẵn như bình thường. Script mặc định ghi vào `~/.codex` hoặc `%USERPROFILE%\.codex`, copy runtime vào app data OS-native, và backup `config.toml`/`hooks.json` trước khi sửa. Chi tiết: [`docs/configure-existing-codex-app.md`](docs/configure-existing-codex-app.md).
+
 ## Test
 
 ```bash
@@ -57,9 +85,10 @@ python3 -m unittest discover -s tests
 Khuyến nghị hiện tại:
 
 - `kimi-k2.6:cloud`: tốt nhất cho coding dài, nhưng cần prompt router + stop guard để ổn định skill/TDD.
+- `glm-5.1:cloud`: gọi tool ổn và nhanh hơn trong web benchmark vừa chạy, nhưng workflow discipline kém Kimi hơn.
 - `deepseek-v4-pro:cloud`: hợp task khó, context lớn; `xhigh` được proxy map sang `max`.
-- `deepseek-v4-flash:cloud`: nhanh hơn, hợp task vừa; cũng map `xhigh -> max`.
-- `qwen3-next:80b-cloud`: chỉ map `xhigh -> high` vì model không có `max`.
+- `deepseek-v4-flash:cloud`: đang không phù hợp với Codex tool-call protocol trong setup hiện tại.
+- `qwen3-coder-next:cloud`: gọi tool được nhưng bị stall trên web benchmark vừa-vừa.
 - Model không có reasoning summaries vẫn chạy được, nhưng không nên kỳ vọng workflow bằng Kimi/DeepSeek.
 
 ## Giới hạn
