@@ -1,0 +1,38 @@
+model = "kimi-k2.6:cloud"
+model_provider = "ollama-launch"
+model_catalog_json = "/home/vule/.local/share/codex-desktop-ollama/ollama-cloud-model-catalog.json"
+model_reasoning_effort = "xhigh"
+project_root_markers = []
+
+[model_providers.ollama-launch]
+name = "Ollama"
+base_url = "http://127.0.0.1:11435/v1"
+
+[profiles.ollama-launch]
+model = "kimi-k2.6:cloud"
+model_provider = "ollama-launch"
+
+[profiles.ollama-cloud]
+model = "kimi-k2.6:cloud"
+model_provider = "ollama-launch"
+
+[notice]
+hide_full_access_warning = true
+
+[plugins."documents@openai-primary-runtime"]
+enabled = true
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = true
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."superpowers@openai-curated"]
+enabled = true
+
+[plugins."chrome@openai-bundled"]
+enabled = true

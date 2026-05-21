@@ -1,0 +1,9 @@
+[project]
+name = "codex-ollama-auto-setup-core"
+version = "0.1.0"
+description = "Auto setup core for an isolated Codex Desktop Ollama profile optimized for Ollama Cloud models."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
