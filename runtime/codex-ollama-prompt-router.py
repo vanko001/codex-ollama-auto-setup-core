@@ -9,7 +9,7 @@ ADDITIONAL_CONTEXT = """Codex Ollama workflow router:
 - For implementation, behavior changes, refactors, or bug fixes: use superpowers:test-driven-development before writing implementation code when feasible.
 - Before claiming fixed, passing, verified, complete, or done: use superpowers:verification-before-completion and run fresh verification.
 - Use rg for search/read orientation. For source, test, docs, and config edits, use apply_patch; do not write files with cat >, tee, printf >, or shell heredoc redirects.
-- Do not run kill, pkill, killall, or cancel running tool sessions automatically. If a command hangs, report the session/process and ask before stopping it.
+- Do not run kill, pkill, killall, os.kill, process.kill, or cancel running tool sessions automatically. If a command hangs, report the session/process and ask before stopping it.
 - If multiple reads are independent, batch them with the available parallel tool. Keep the final answer evidence-based and concise.
 """
 

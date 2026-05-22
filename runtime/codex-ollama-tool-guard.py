@@ -58,6 +58,10 @@ XARGS_PROCESS_TERMINATION_RE = re.compile(
     r"xargs\b[^\n;&|]*\bkill\b"
 )
 
+SCRIPT_PROCESS_TERMINATION_RE = re.compile(
+    r"(?is)\b(?:os\.kill|os\.killpg|process\.kill)\s*\("
+)
+
 SOURCE_PATH_PREFIXES = (
     "api/",
     "config/",
@@ -213,6 +217,8 @@ def kill_is_signal_zero_probe(args):
 
 
 def has_process_termination(command):
+    if SCRIPT_PROCESS_TERMINATION_RE.search(command):
+        return True
     if XARGS_PROCESS_TERMINATION_RE.search(command):
         return True
     for match in DIRECT_PROCESS_TERMINATION_RE.finditer(command):

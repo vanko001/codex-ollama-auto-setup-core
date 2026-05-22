@@ -83,6 +83,10 @@ class ToolGuardTest(unittest.TestCase):
         self.assert_process_blocked("sudo pkill -f 'gh auth login'")
         self.assert_process_blocked("killall node || true")
         self.assert_process_blocked("ps aux | rg 'vite' | awk '{print $2}' | xargs kill")
+        self.assert_process_blocked(
+            "python3 - <<'PY'\nimport os, signal\nos.kill(62992, signal.SIGTERM)\nPY"
+        )
+        self.assert_process_blocked("node -e \"process.kill(62992, 'SIGTERM')\"")
 
 
 if __name__ == "__main__":

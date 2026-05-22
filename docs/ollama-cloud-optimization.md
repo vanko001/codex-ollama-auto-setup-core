@@ -36,7 +36,7 @@ Catalog thêm `base_instructions` cho tất cả model để ép:
 - đọc skill phù hợp trước khi inspect code;
 - bug/fix dùng debugging + TDD + verification;
 - edit bằng `apply_patch`;
-- không tự chạy `kill`/`pkill`/`killall` để hủy process hoặc tool session;
+- không tự chạy `kill`/`pkill`/`killall` hoặc script API như `os.kill`/`process.kill` để hủy process hoặc tool session;
 - final phải có evidence nếu claim pass/fixed/done.
 
 Hook vẫn quan trọng vì model ngoài Codex có thể bỏ qua instruction khi context dài hoặc khi tool-call pressure cao.
