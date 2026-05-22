@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 import json
 import re
+import shlex
 import sys
 
 
 BLOCK_REASON = (
     "Codex Ollama Tool Guard: direct shell file writes are blocked for "
     "source/test/docs edits. Retry the edit with apply_patch."
+)
+
+PROCESS_BLOCK_REASON = (
+    "Codex Ollama Tool Guard: process termination commands are blocked. "
+    "Do not kill running tool sessions or OS processes automatically; report "
+    "the blocked process and ask the user before stopping it."
 )
 
 
@@ -37,6 +44,18 @@ PY_OPEN_WRITE_RE = re.compile(
     r"(?is)\bopen\s*\(\s*"
     r"(?P<target>'[^']+'|\"[^\"]+\")\s*,\s*"
     r"(?P<mode>'[wa][^']*'|\"[wa][^\"]*\")"
+)
+
+DIRECT_PROCESS_TERMINATION_RE = re.compile(
+    r"(?ims)(?:^|[;&|]{1,2}\s*)"
+    r"(?:(?:command|sudo|doas)\s+|env\s+(?:[A-Za-z_][A-Za-z0-9_]*=(?:'[^']*'|\"[^\"]*\"|\S+)\s+)*)*"
+    r"(?P<cmd>kill|pkill|killall)\b"
+    r"(?P<args>[^\n;&|]*)"
+)
+
+XARGS_PROCESS_TERMINATION_RE = re.compile(
+    r"(?ims)(?:^|[;&|]{1,2}\s*)"
+    r"xargs\b[^\n;&|]*\bkill\b"
 )
 
 SOURCE_PATH_PREFIXES = (
@@ -173,34 +192,76 @@ def has_script_file_write(command):
     return False
 
 
-def should_block(event):
+def shell_tokens(value):
+    try:
+        return shlex.split(value, comments=False, posix=True)
+    except ValueError:
+        return value.split()
+
+
+def kill_is_signal_zero_probe(args):
+    tokens = shell_tokens(args)
+    if not tokens:
+        return False
+    if tokens[0] == "-0" or tokens[0] == "-s0":
+        return True
+    if len(tokens) >= 2 and tokens[0] == "-s" and tokens[1] == "0":
+        return True
+    if len(tokens) >= 2 and tokens[0] == "-n" and tokens[1] == "0":
+        return True
+    return False
+
+
+def has_process_termination(command):
+    if XARGS_PROCESS_TERMINATION_RE.search(command):
+        return True
+    for match in DIRECT_PROCESS_TERMINATION_RE.finditer(command):
+        cmd = match.group("cmd").lower()
+        if cmd == "kill" and kill_is_signal_zero_probe(match.group("args")):
+            continue
+        return True
+    return False
+
+
+def block_reason(event):
     tool_name = event_tool_name(event).lower()
     if tool_name in {"apply_patch", "edit", "write"}:
-        return False
+        return None
 
     command = event_command(event)
     if not command.strip():
-        return False
+        return None
     if starts_with_apply_patch(command):
-        return False
+        return None
 
-    return has_producer_redirect(command) or has_tee_write(command) or has_script_file_write(command)
+    if has_process_termination(command):
+        return PROCESS_BLOCK_REASON
+
+    if has_producer_redirect(command) or has_tee_write(command) or has_script_file_write(command):
+        return BLOCK_REASON
+
+    return None
 
 
-def deny_payload():
+def should_block(event):
+    return block_reason(event) is not None
+
+
+def deny_payload(reason):
     return {
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
             "permissionDecision": "deny",
-            "permissionDecisionReason": BLOCK_REASON,
+            "permissionDecisionReason": reason,
         }
     }
 
 
 def main():
     event = load_event()
-    if should_block(event):
-        print(json.dumps(deny_payload(), separators=(",", ":")))
+    reason = block_reason(event)
+    if reason:
+        print(json.dumps(deny_payload(reason), separators=(",", ":")))
     return 0
 
 

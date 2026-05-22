@@ -13,7 +13,7 @@ Mục tiêu thực tế là khoảng **95% workflow parity**, không phải 100%
 - `runtime/ollama-reasoning-proxy.py`: proxy rewrite `xhigh` của Codex sang reasoning native của Ollama Cloud, ví dụ `max` hoặc `high`.
 - `runtime/ollama-cloud-model-catalog.json`: catalog model Ollama Cloud có base instructions ép skill routing, TDD, verification và `apply_patch`.
 - `runtime/codex-ollama-prompt-router.py`: `UserPromptSubmit` hook inject context ngắn để model tự chọn skill phù hợp.
-- `runtime/codex-ollama-tool-guard.py`: `PreToolUse` hook chặn shell write kiểu `cat >`, `tee`, `printf >`, `fs.writeFileSync`, `Path(...).write_text`, ép dùng `apply_patch`.
+- `runtime/codex-ollama-tool-guard.py`: `PreToolUse` hook chặn shell write kiểu `cat >`, `tee`, `printf >`, `fs.writeFileSync`, `Path(...).write_text`, ép dùng `apply_patch`; đồng thời chặn `kill`/`pkill`/`killall` để model không tự hủy process đang chạy.
 - `runtime/codex-ollama-stop-guard.py`: `Stop` hook chặn câu trả lời “done/fixed/pass” nếu transcript chưa có verification command thành công.
 - `scripts/configure-profile.py`: cấu hình model/provider, reasoning `xhigh`, profile alias `ollama-launch`/`ollama-cloud`, plugin toggles hiện dùng (`superpowers`, `github`, `chrome`, docs/sheets/presentations).
 

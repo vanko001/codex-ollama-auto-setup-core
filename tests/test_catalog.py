@@ -19,6 +19,7 @@ class OllamaCatalogTest(unittest.TestCase):
             "superpowers:verification-before-completion",
             "read the applicable SKILL.md with a shell command before touching code",
             "Never use cat >, tee, printf >, or heredoc redirection",
+            "Do not run kill, pkill, killall",
             "final answer exactly",
         ]
 

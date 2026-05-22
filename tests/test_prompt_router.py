@@ -36,6 +36,7 @@ class PromptRouterTest(unittest.TestCase):
         self.assertIn("superpowers:verification-before-completion", context)
         self.assertIn("apply_patch", context)
         self.assertIn("rg", context)
+        self.assertIn("kill", context)
 
     def test_context_is_brief_enough_for_every_prompt(self):
         result = run_router("hello")
